@@ -1,0 +1,23 @@
+# BRNT LoginProbe — Netlify deployment
+#
+# The Next.js runtime plugin deploys every /api/* route as a Netlify Function,
+# and Netlify Blobs (see src/lib/storage.ts) persists:
+#   - member access keys   (access.json)
+#   - live panel sessions  (live-sessions.json)
+#   - usage audit logs     (logs/usage-YYYY-MM-DD.txt)
+#   - replay session jars  (sessions/...)
+#
+# Recommended: set BRNT_ADMIN_KEY in Site settings -> Environment variables
+# (the "brnt-admin" fallback is public knowledge and should not be used live).
+
+[build]
+  # Plain next build — the package.json "build" script also stages the
+  # standalone server for container hosting, which does not exist on Netlify.
+  command = "npx next build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
