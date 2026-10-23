@@ -46,6 +46,12 @@ export function LoginProbeApp() {
   const [minted, setMinted] = useState<AccessRecord | null>(null);
   const [copied, setCopied] = useState("");
 
+  // built-in codes (50 permanent accounts) — fetched admin-gated on demand
+  const [builtinCodes, setBuiltinCodes] = useState<string[]>([]);
+  const [builtinOpen, setBuiltinOpen] = useState(false);
+  const [builtinBusy, setBuiltinBusy] = useState(false);
+  const [builtinErr, setBuiltinErr] = useState("");
+
   // admin (live panel management) — verified against the server, kept in session storage
   const [adminKey, setAdminKey] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -208,6 +214,42 @@ export function LoginProbeApp() {
     }
   }
 
+  async function loadBuiltin() {
+    const key = mintAdminInput || adminKey;
+    if (!key.trim()) {
+      setBuiltinErr("Enter the admin key above first.");
+      return;
+    }
+    setBuiltinBusy(true);
+    setBuiltinErr("");
+    try {
+      const res = await fetch("/api/access", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "list-builtin", adminKey: key }),
+      });
+      const j = await res.json().catch(() => null);
+      if (res.ok && j?.ok && Array.isArray(j.codes)) {
+        setBuiltinCodes(j.codes);
+        setBuiltinOpen(true);
+      } else {
+        setBuiltinErr(String(j?.error || "Could not load built-in codes."));
+      }
+    } catch {
+      setBuiltinErr("Could not reach the access server.");
+    } finally {
+      setBuiltinBusy(false);
+    }
+  }
+
+  async function copyAllBuiltin() {
+    try {
+      await navigator.clipboard.writeText(builtinCodes.join("\n"));
+      setCopied("builtin");
+      setTimeout(() => setCopied(""), 1500);
+    } catch {}
+  }
+
   const locked = !confirmed || !accessRecord;
 
   return (
@@ -237,7 +279,7 @@ export function LoginProbeApp() {
             )}
             {accessRecord && (
               <span className="hidden sm:inline rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-emerald-400">
-                {accessRecord.code} · {accessRecord.days}d
+                {accessRecord.code} · {accessRecord.days === 0 ? "∞" : `${accessRecord.days}d`}
               </span>
             )}
             <label className="flex items-center gap-1.5 text-zinc-400 cursor-pointer" title="Authorization confirmation">
@@ -408,6 +450,45 @@ export function LoginProbeApp() {
                       >
                         Use this key
                       </Button>
+                    </div>
+                  )}
+                  {/* built-in accounts: 50 permanent codes, admin-gated */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      onClick={loadBuiltin}
+                      disabled={builtinBusy}
+                      variant="outline"
+                      className="border-zinc-700"
+                      title="List the 50 permanent built-in member accounts"
+                    >
+                      {builtinBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Show built-in codes (50)
+                    </Button>
+                    {builtinCodes.length > 0 && (
+                      <Button size="sm" variant="ghost" className="text-emerald-400" onClick={copyAllBuiltin}>
+                        <Copy className="h-3 w-3" /> {copied === "builtin" ? "Copied all 50" : "Copy all"}
+                      </Button>
+                    )}
+                  </div>
+                  {builtinErr && <p className="text-[11px] text-rose-400">{builtinErr}</p>}
+                  {builtinOpen && builtinCodes.length > 0 && (
+                    <div className="rounded border border-zinc-800 bg-zinc-950 p-2 max-h-64 overflow-y-auto">
+                      <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                        {builtinCodes.map((c, i) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setAccessKey(c)}
+                            className="flex items-center justify-between gap-2 rounded px-2 py-1 text-left font-mono text-xs text-zinc-300 transition-colors hover:bg-zinc-900 hover:text-emerald-300"
+                            title="Click to fill the member key box"
+                          >
+                            <span className="text-zinc-600">{String(i + 1).padStart(2, "0")}</span>
+                            <span>{c}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-1 text-[10px] text-zinc-600">
+                        Permanent accounts — never expire, no storage needed. Click one to fill the key box.
+                      </p>
                     </div>
                   )}
                   <p className="text-[11px] text-zinc-600">Ask the console owner for the admin key — it is never shown in the app.</p>
