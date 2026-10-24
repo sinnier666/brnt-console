@@ -7,7 +7,7 @@
 //   date-bucketed .txt usage log; members clear their own records, the admin
 //   downloads everything by date.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ import {
   resolveNftoken,
 } from "@/lib/session-export";
 import type { ParsedCookie } from "@/lib/cookies";
+import { listLocalLive, addLocalLive, removeLocalLive, type LocalLiveSession } from "@/lib/local-live";
 
 /**
  * Freshest cookies for a live entry — EXACTLY mirrors the result dialog's
@@ -101,6 +102,13 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [note, setNote] = useState("");
+
+  // device-local fallback pool — entries pushed when the server pool cannot save
+  const [localSessions, setLocalSessions] = useState<LocalLiveSession[]>([]);
+  useEffect(() => {
+    setLocalSessions(listLocalLive());
+  }, [refreshTick]);
+  const all = useMemo<LiveSession[]>(() => [...localSessions, ...sessions], [localSessions, sessions]);
 
   // admin add form
   const [showAdd, setShowAdd] = useState(false);
@@ -288,7 +296,22 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
         onChanged();
         await record("live-added", j.record?.host || "-", "");
       } else {
-        setAddError(j?.error || j?.message || `Add failed (HTTP ${res.status})`);
+        const why = String(j?.error || j?.message || `Add failed (HTTP ${res.status})`);
+        if (why.startsWith("STORAGE_")) {
+          // server pool can't save — keep the entry on this device
+          const local = addLocalLive({ target: addTarget, label: addLabel, cookieHeader: addCookies });
+          if (local) {
+            setAddCookies("");
+            setAddLabel("");
+            setAddTarget("");
+            setShowAdd(false);
+            setLocalSessions(listLocalLive());
+            setNote("Server pool unavailable — cookies saved to THIS DEVICE's live panel instead.");
+            onChanged();
+            return;
+          }
+        }
+        setAddError(why);
       }
     } catch {
       setAddError("Could not reach the server.");
@@ -299,6 +322,13 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
 
   async function removeSession(s: LiveSession) {
     setNote("");
+    // device-local entries never touch the server
+    if (s.id.startsWith("dev_")) {
+      removeLocalLive(s.id);
+      setLocalSessions(listLocalLive());
+      onChanged();
+      return;
+    }
     try {
       const res = await fetch(`/api/live-sessions?id=${encodeURIComponent(s.id)}`, {
         method: "DELETE",
@@ -372,7 +402,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
       <div className="flex items-center gap-2">
         <Radio className="h-4 w-4 text-emerald-400" />
         <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
-          Live sessions {sessions.length > 0 && <span className="text-zinc-500">({sessions.length})</span>}
+          Live sessions {all.length > 0 && <span className="text-zinc-500">({all.length})</span>}
         </h2>
         <div className="ml-auto flex items-center gap-1">
           {isAdmin && (
@@ -464,7 +494,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
       {loadError && <p className="text-xs text-amber-400">{loadError}</p>}
       {note && <p className="text-xs text-amber-400">{note}</p>}
 
-      {!loading && sessions.length === 0 && !loadError && (
+      {!loading && all.length === 0 && !loadError && (
         <div className="rounded-lg border border-dashed border-zinc-800 p-4 text-center text-xs text-zinc-500">
           No live sessions yet.{" "}
           {isAdmin ? "Paste cookies above or hit the sky button on a success result in the results list." : "The admin adds working cookies here."}
@@ -472,8 +502,9 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
       )}
 
       <ul className="space-y-2">
-        {sessions.map((s) => {
+        {all.map((s) => {
           const netflix = isNetflixHost(s.target);
+          const isDevice = s.addedBy === "device";
           return (
             <li key={s.id} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-2.5 space-y-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -482,6 +513,14 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                 </span>
                 <span className="font-mono text-xs text-zinc-200 truncate">{s.host}</span>
+                {isDevice && (
+                  <span
+                    className="shrink-0 rounded border border-amber-500/50 bg-amber-500/10 px-1 py-px text-[9px] font-bold text-amber-400"
+                    title="Saved on this device only — the shared server pool is unavailable on this deployment"
+                  >
+                    device
+                  </span>
+                )}
                 {s.label && <span className="text-[11px] text-zinc-500 truncate hidden sm:inline">{s.label}</span>}
                 <span className="ml-auto text-[10px] text-zinc-600 shrink-0">{timeAgo(s.addedAt)}</span>
                 {isAdmin && (

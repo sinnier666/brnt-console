@@ -134,17 +134,41 @@ export async function addLiveSession(input: {
     addedAt: new Date().toISOString(),
     addedBy: "admin",
   };
-  const store = await loadStore();
-  store.sessions.push(record);
-  await saveStore(store);
+  try {
+    const store = await loadStore();
+    store.sessions.push(record);
+    await saveStore(store);
+  } catch (e) {
+    // Storage write failed (e.g. Netlify Blobs unavailable on this deployment).
+    // Surface the REAL error instead of an unhandled 500, and point at the
+    // client-side device fallback.
+    const why = e instanceof Error ? e.message : String(e);
+    return {
+      ok: false,
+      error: `STORAGE_WRITE_FAILED — ${why}`.slice(0, 300),
+    };
+  }
   return { ok: true, record };
 }
 
-export async function removeLiveSession(id: string): Promise<boolean> {
-  const store = await loadStore();
+export async function removeLiveSession(
+  id: string
+): Promise<{ ok: boolean; notFound?: boolean; error?: string }> {
+  let store: LiveStore;
+  try {
+    store = await loadStore();
+  } catch (e) {
+    const why = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: `STORAGE_READ_FAILED — ${why}`.slice(0, 300) };
+  }
   const before = store.sessions.length;
   store.sessions = store.sessions.filter((s) => s.id !== id);
-  if (store.sessions.length === before) return false;
-  await saveStore(store);
-  return true;
+  if (store.sessions.length === before) return { ok: false, notFound: true };
+  try {
+    await saveStore(store);
+  } catch (e) {
+    const why = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: `STORAGE_WRITE_FAILED — ${why}`.slice(0, 300) };
+  }
+  return { ok: true };
 }

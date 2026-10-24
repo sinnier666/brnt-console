@@ -61,6 +61,8 @@ export async function DELETE(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id") || "";
   if (!id) return NextResponse.json({ ok: false, error: "ID_REQUIRED" }, { status: 400 });
   const removed = await removeLiveSession(id);
-  if (!removed) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
-  return NextResponse.json({ ok: true });
+  if (removed.ok) return NextResponse.json({ ok: true });
+  if (removed.notFound) return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+  // storage backend failure — surface the real reason with 503
+  return NextResponse.json({ ok: false, error: removed.error || "STORAGE_FAILED" }, { status: 503 });
 }

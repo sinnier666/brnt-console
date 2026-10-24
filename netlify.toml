@@ -17,7 +17,9 @@
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # Node 22 LTS — @netlify/blobs v11 requires node >= 22.12 (v20 breaks the
+  # Blobs client at runtime). Functions inherit this runtime too.
+  NODE_VERSION = "22"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

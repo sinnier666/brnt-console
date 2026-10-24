@@ -13,6 +13,7 @@ import { SingleCheckForm } from "./single-check-form";
 import { BulkCheckForm } from "./bulk-check-form";
 import { ResultsPanel } from "./results-panel";
 import { LivePanel } from "./live-panel";
+import { addLocalLive } from "@/lib/local-live";
 
 const RESULTS_KEY = "login-probe-results";
 const CONFIRMED_KEY = "brnt-confirmed";
@@ -165,7 +166,9 @@ export function LoginProbeApp() {
     } catch {}
   }
 
-  /** Admin: push a result row's cookies into the shared live panel (live session box). */
+  /** Admin: push a result row's cookies into the shared live panel (live session box).
+   * If the server pool can't save (e.g. Netlify Blobs write failure), the session
+   * falls back to THIS DEVICE's local live pool so the panel keeps working. */
   async function pushLive(p: {
     target: string;
     cookies: string;
@@ -173,6 +176,7 @@ export function LoginProbeApp() {
     sessionId?: string;
     label: string;
   }): Promise<string | null> {
+    let serverError: string;
     try {
       const res = await fetch("/api/live-sessions", {
         method: "POST",
@@ -184,10 +188,22 @@ export function LoginProbeApp() {
         setLiveTick((t) => t + 1);
         return null;
       }
-      return String(j?.error || j?.message || `HTTP ${res.status}`);
+      serverError = String(j?.error || j?.message || `HTTP ${res.status}`);
     } catch (e) {
-      return e instanceof Error ? e.message : String(e);
+      serverError = e instanceof Error ? e.message : String(e);
     }
+    // Server pool unavailable — keep the session on this device.
+    const local = addLocalLive({
+      target: p.target,
+      label: p.label,
+      cookieHeader: p.cookies,
+      cookies: p.cookieObjs,
+    });
+    if (local) {
+      setLiveTick((t) => t + 1);
+      return `Server pool unavailable (${serverError}) — session saved to THIS DEVICE's live panel instead.`;
+    }
+    return serverError;
   }
 
   async function mint() {

@@ -73,6 +73,18 @@ class FsKV implements KV {
 }
 
 // ---------------- Netlify Blobs backend ----------------
+//
+// ⚠ Root cause of the historic "all writes 500 on Netlify" bug (found in the
+// @netlify/blobs v11 client source): a store created with
+// `consistency: "strong"` throws BlobsConsistencyError on EVERY operation when
+// the deployment's Blobs context carries no `uncachedEdgeURL` — which is the
+// case on this site's deploys. Reads swallowed the throw (panel looked empty
+// but "fine"); writes propagated it as HTTP 500.
+//
+// Fix: use the default "eventual" consistency. Per Netlify docs, writes are
+// readable immediately (new/changed objects), updates/deletes propagate to the
+// edge within ~60s — acceptable for this app (mint→verify is read-after-write
+// on the same invocation path, and the 50 built-in codes bypass storage).
 
 // Minimal structural type — avoids bundling @netlify/blobs types into builds
 // that never use it (the import below is dynamic and only runs on Netlify).
@@ -91,9 +103,11 @@ class BlobsKV implements KV {
   private async s(): Promise<BlobsStore> {
     if (!this.store) {
       const mod = (await import("@netlify/blobs")) as unknown as {
-        getStore: (opts: { name: string; consistency?: "strong" | "eventual" }) => BlobsStore;
+        getStore: (opts: { name: string }) => BlobsStore;
       };
-      this.store = mod.getStore({ name: BLOBS_STORE_NAME, consistency: "strong" });
+      // NO consistency option — "strong" hard-fails on deploys whose Blobs
+      // context lacks uncachedEdgeURL (see comment above). Eventual default.
+      this.store = mod.getStore({ name: BLOBS_STORE_NAME });
     }
     return this.store;
   }
@@ -102,20 +116,30 @@ class BlobsKV implements KV {
     try {
       const v = await (await this.s()).get(key);
       return v ?? null;
-    } catch {
+    } catch (e) {
+      // A missing key returns null WITHOUT throwing; a throw is a real
+      // failure. Log it (visible in Netlify function logs) but keep the
+      // read path non-fatal so the UI degrades gracefully.
+      console.error(`[blobs] get failed for "${key}":`, e);
       return null;
     }
   }
 
   async set(key: string, value: string): Promise<void> {
-    await (await this.s()).set(key, value);
+    try {
+      await (await this.s()).set(key, value);
+    } catch (e) {
+      console.error(`[blobs] set failed for "${key}":`, e);
+      throw e; // callers surface this as STORAGE_WRITE_FAILED
+    }
   }
 
   async del(key: string): Promise<void> {
     try {
       await (await this.s()).delete(key);
-    } catch {
-      /* already gone */
+    } catch (e) {
+      console.error(`[blobs] delete failed for "${key}":`, e);
+      /* treat as already gone */
     }
   }
 
@@ -123,7 +147,8 @@ class BlobsKV implements KV {
     try {
       const res = await (await this.s()).list({ prefix });
       return (res.blobs || []).map((b) => b.key).sort();
-    } catch {
+    } catch (e) {
+      console.error(`[blobs] list failed for "${prefix}":`, e);
       return [];
     }
   }
