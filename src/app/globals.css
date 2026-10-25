@@ -121,29 +121,127 @@
   }
 }
 
-/* LoginProbe console customizations */
+/* ─── Exodia palette overrides ─────────────────────────────────────────
+   Black dominant; accents in dark gold, light gold and bronze.
+   yellow-* tokens → gold family, orange-* tokens → bronze family.
+   Every yellow-*/orange-* utility across the app re-tints from here.  */
+@theme {
+  /* light gold → dark gold (was bright yellow) */
+  --color-yellow-50: #fbf6e6;
+  --color-yellow-100: #f5ecce;
+  --color-yellow-200: #ece0a3;
+  --color-yellow-300: #e6cf7d; /* light gold  (text highlights)        */
+  --color-yellow-400: #d9b84a; /* gold light  (icons, active states)   */
+  --color-yellow-500: #c9a227; /* core gold   (buttons, borders)       */
+  --color-yellow-600: #a8861d; /* dark gold   (hover states)           */
+  --color-yellow-700: #856a18; /* deeper dark gold                     */
+  --color-yellow-800: #6b5415;
+  --color-yellow-900: #584412;
+  --color-yellow-950: #332807; /* text on gold buttons                 */
+
+  /* bronze (warnings, secondary badges — was bright orange) */
+  --color-orange-50: #faf1e7;
+  --color-orange-100: #f2e0cd;
+  --color-orange-200: #e6c7a4;
+  --color-orange-300: #dcae7e;
+  --color-orange-400: #c68a4e; /* light bronze */
+  --color-orange-500: #b07238; /* core bronze  */
+  --color-orange-600: #94592b; /* dark bronze  */
+  --color-orange-700: #7a4823;
+  --color-orange-800: #5d381d;
+  --color-orange-900: #472c18;
+  --color-orange-950: #2b1a0e;
+}
+
+/* ─── Exodia — obsidian & gold liquid-glass theme ─── */
 html {
   color-scheme: dark;
 }
 body {
-  background: #0b0f14;
-  color: #e5e7eb;
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(201, 162, 39, 0.06), transparent 60%),
+    radial-gradient(900px 560px at 105% 108%, rgba(176, 114, 56, 0.07), transparent 55%),
+    radial-gradient(700px 500px at 78% -14%, rgba(230, 207, 125, 0.035), transparent 60%),
+    #050403;
+  color: #e9e2d2;
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: #374151 #0b0f14;
+  scrollbar-color: #7a601c #050403;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: #7a601c;
   border-radius: 4px;
 }
 *::-webkit-scrollbar-track {
-  background: #0b0f14;
+  background: #050403;
 }
 code {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* default animated background (shown when no wallpaper is set) */
+.exodia-aurora {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(52% 42% at 18% 12%, rgba(201, 162, 39, 0.09), transparent 62%),
+    radial-gradient(44% 40% at 84% 22%, rgba(230, 207, 125, 0.045), transparent 60%),
+    radial-gradient(50% 46% at 72% 88%, rgba(168, 134, 29, 0.09), transparent 60%),
+    radial-gradient(36% 34% at 30% 82%, rgba(176, 114, 56, 0.07), transparent 60%);
+  filter: blur(10px);
+  animation: exodia-drift 34s ease-in-out infinite alternate;
+}
+@keyframes exodia-drift {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, 2%, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(-1%, 1%, 0) scale(1.02);
+  }
+}
+
+/* liquid glass panel — dark obsidian glass with gold rim light */
+.exodia-glass {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.045),
+    rgba(0, 0, 0, 0.24) 40%,
+    rgba(168, 134, 29, 0.05) 100%
+  );
+  border: 1px solid rgba(201, 162, 39, 0.2) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 18px 45px -18px rgba(0, 0, 0, 0.8),
+    0 0 36px -14px rgba(201, 162, 39, 0.14);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+/* metallic gold display text: light gold → gold → dark gold → bronze */
+.exodia-gold-text {
+  background: linear-gradient(115deg, #f0dfa0 0%, #d9b84a 35%, #a8861d 60%, #c68a4e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 20px rgba(201, 162, 39, 0.2);
+}
+
+input[type="range"] {
+  accent-color: #c9a227;
+}
+
+/* default (shadcn) primary buttons + focus rings → refined gold */
+.dark {
+  --primary: oklch(0.72 0.125 90);
+  --primary-foreground: oklch(0.22 0.05 95);
+  --ring: oklch(0.6 0.1 88);
 }

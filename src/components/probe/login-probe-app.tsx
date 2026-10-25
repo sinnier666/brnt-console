@@ -14,6 +14,7 @@ import { BulkCheckForm } from "./bulk-check-form";
 import { ResultsPanel } from "./results-panel";
 import { LivePanel } from "./live-panel";
 import { addLocalLive } from "@/lib/local-live";
+import { WallpaperButton, useWallpaper } from "./wallpaper-picker";
 
 const RESULTS_KEY = "login-probe-results";
 const CONFIRMED_KEY = "brnt-confirmed";
@@ -57,6 +58,9 @@ export function LoginProbeApp() {
   const [adminKey, setAdminKey] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [liveTick, setLiveTick] = useState(0);
+
+  // wallpaper
+  const [wall, setWall] = useWallpaper();
 
   // shared form state
   const [mode, setMode] = useState("single");
@@ -269,32 +273,52 @@ export function LoginProbeApp() {
   const locked = !confirmed || !accessRecord;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0b0f14] text-zinc-100">
+    <div className="min-h-screen flex flex-col text-zinc-100">
+      {/* wallpaper / aurora background layer */}
+      <div aria-hidden className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        {wall ? (
+          <>
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: `url("${wall.src}")`,
+                filter: wall.blur ? `blur(${wall.blur}px)` : undefined,
+                transform: wall.blur ? "scale(1.08)" : undefined,
+              }}
+            />
+            <div className="absolute inset-0 bg-black" style={{ opacity: (wall.dim ?? 45) / 100 }} />
+          </>
+        ) : (
+          <div className="exodia-aurora" />
+        )}
+      </div>
+
       {/* header */}
-      <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-[#0b0f14]/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-yellow-500/15 bg-[#050403]/70 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-yellow-400 shadow-[0_0_10px_#c9a227]" />
           <h1 className="text-base font-extrabold tracking-tight">
-            LoginProbe <span className="text-zinc-500 font-medium">by BRNT™</span>
+            <span className="exodia-gold-text">Exodia</span> <span className="text-zinc-500 font-medium">by BRNT™</span>
           </h1>
           <div className="ml-auto flex items-center gap-2 text-xs">
+            <WallpaperButton value={wall} onChange={setWall} />
             <a
               href="/brnt-cookie-bridge.zip"
               download
               title="Download the BRNT Cookie Bridge extension (zip) - one-click cookie import on the current page"
-              className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20"
+              className="inline-flex items-center gap-1.5 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-2.5 py-1.5 font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
             >
               <Puzzle className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Cookie Bridge</span>
               <span className="sm:hidden">Bridge</span>
             </a>
             {isAdmin && (
-              <span className="hidden sm:inline rounded border border-sky-500/50 bg-sky-500/10 px-2 py-0.5 font-bold text-sky-400" title="Admin mode — live panel management unlocked">
+              <span className="hidden sm:inline rounded border border-yellow-500/50 bg-yellow-500/10 px-2 py-0.5 font-bold text-yellow-400" title="Admin mode — live panel management unlocked">
                 <Radio className="mr-1 inline h-3 w-3" />ADMIN
               </span>
             )}
             {accessRecord && (
-              <span className="hidden sm:inline rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-emerald-400">
+              <span className="hidden sm:inline rounded border border-yellow-500/40 bg-yellow-500/10 px-2 py-0.5 font-mono text-yellow-400">
                 {accessRecord.code} · {accessRecord.days === 0 ? "∞" : `${accessRecord.days}d`}
               </span>
             )}
@@ -308,13 +332,13 @@ export function LoginProbeApp() {
                     localStorage.setItem(CONFIRMED_KEY, v ? "1" : "0");
                   } catch {}
                 }}
-                className="data-[state=checked]:bg-emerald-500"
+                className="data-[state=checked]:bg-yellow-500"
               />
             </label>
             <Button
               variant="ghost"
               size="sm"
-              className="text-zinc-400 hover:text-emerald-400"
+              className="text-zinc-400 hover:text-yellow-400"
               onClick={() => setGateOpen(true)}
               aria-label="Manage member access key"
             >
@@ -336,14 +360,14 @@ export function LoginProbeApp() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-4 py-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] items-start">
           <div className="space-y-6 min-w-0">
         {/* access gate */}
         {gateOpen && (
-          <section className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-5 space-y-4" aria-label="Member access">
+          <section className="exodia-glass rounded-xl p-5 space-y-4" aria-label="Member access">
             <div className="flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-emerald-400" />
+              <ShieldAlert className="h-4 w-4 text-yellow-400" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">Member access</h2>
               {validating && <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-500" />}
             </div>
@@ -363,7 +387,7 @@ export function LoginProbeApp() {
                     localStorage.setItem(CONFIRMED_KEY, v ? "1" : "0");
                   } catch {}
                 }}
-                className="data-[state=checked]:bg-emerald-500"
+                className="data-[state=checked]:bg-yellow-500"
               />
             </div>
 
@@ -382,7 +406,7 @@ export function LoginProbeApp() {
                 />
               </div>
               <Button
-                className="self-end bg-emerald-500 hover:bg-emerald-600 text-emerald-950 font-bold"
+                className="self-end bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-bold"
                 onClick={async () => {
                   const ok = await validate(accessKey);
                   if (ok) {
@@ -400,7 +424,7 @@ export function LoginProbeApp() {
             <div>
               <button
                 type="button"
-                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-emerald-400"
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-yellow-400"
                 onClick={() => setShowAdmin((v) => !v)}
               >
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAdmin ? "rotate-180" : ""}`} />
@@ -431,15 +455,15 @@ export function LoginProbeApp() {
                     </Button>
                   </div>
                   {minted && (
-                    <div className="flex flex-wrap items-center gap-2 rounded border border-emerald-500/40 bg-emerald-500/10 p-2">
-                      <span className="font-mono text-emerald-300 font-bold">{minted.code}</span>
+                    <div className="flex flex-wrap items-center gap-2 rounded border border-yellow-500/40 bg-yellow-500/10 p-2">
+                      <span className="font-mono text-yellow-300 font-bold">{minted.code}</span>
                       <span className="text-[11px] text-zinc-400">
                         valid {minted.days} day(s) · until {new Date(minted.expiresAt).toLocaleString()}
                       </span>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 text-emerald-400"
+                        className="h-6 text-yellow-400"
                         onClick={async () => {
                           try {
                             await navigator.clipboard.writeText(minted.code);
@@ -453,7 +477,7 @@ export function LoginProbeApp() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 text-emerald-400"
+                        className="h-6 text-yellow-400"
                         onClick={async () => {
                           setAccessKey(minted.code);
                           const ok = await validate(minted.code);
@@ -480,7 +504,7 @@ export function LoginProbeApp() {
                       {builtinBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Show built-in codes (50)
                     </Button>
                     {builtinCodes.length > 0 && (
-                      <Button size="sm" variant="ghost" className="text-emerald-400" onClick={copyAllBuiltin}>
+                      <Button size="sm" variant="ghost" className="text-yellow-400" onClick={copyAllBuiltin}>
                         <Copy className="h-3 w-3" /> {copied === "builtin" ? "Copied all 50" : "Copy all"}
                       </Button>
                     )}
@@ -494,7 +518,7 @@ export function LoginProbeApp() {
                             key={c}
                             type="button"
                             onClick={() => setAccessKey(c)}
-                            className="flex items-center justify-between gap-2 rounded px-2 py-1 text-left font-mono text-xs text-zinc-300 transition-colors hover:bg-zinc-900 hover:text-emerald-300"
+                            className="flex items-center justify-between gap-2 rounded px-2 py-1 text-left font-mono text-xs text-zinc-300 transition-colors hover:bg-zinc-900 hover:text-yellow-300"
                             title="Click to fill the member key box"
                           >
                             <span className="text-zinc-600">{String(i + 1).padStart(2, "0")}</span>
@@ -519,11 +543,11 @@ export function LoginProbeApp() {
         {/* check forms */}
         <Tabs value={mode} onValueChange={setMode}>
           <TabsList className="bg-zinc-900 border border-zinc-800">
-            <TabsTrigger value="single" className="data-[state=active]:text-emerald-400">Single check</TabsTrigger>
-            <TabsTrigger value="bulk" className="data-[state=active]:text-emerald-400">Bulk check</TabsTrigger>
+            <TabsTrigger value="single" className="data-[state=active]:text-yellow-400">Single check</TabsTrigger>
+            <TabsTrigger value="bulk" className="data-[state=active]:text-yellow-400">Bulk check</TabsTrigger>
           </TabsList>
           <TabsContent value="single" className="mt-4">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4 sm:p-6">
+            <div className="exodia-glass rounded-xl p-4 sm:p-6">
               <SingleCheckForm
                 lockedUrl={urlLocked && loginUrl.trim() ? loginUrl : null}
                 cookies={sharedCookies}
@@ -534,7 +558,7 @@ export function LoginProbeApp() {
             </div>
           </TabsContent>
           <TabsContent value="bulk" className="mt-4">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4 sm:p-6">
+            <div className="exodia-glass rounded-xl p-4 sm:p-6">
               <BulkCheckForm
                 loginUrl={loginUrl}
                 onLoginUrlChange={setLoginUrl}
@@ -580,9 +604,9 @@ export function LoginProbeApp() {
         </div>
       </main>
 
-      <footer className="mt-auto border-t border-zinc-800/80">
+      <footer className="relative z-10 mt-auto border-t border-yellow-500/15">
         <div className="mx-auto max-w-7xl px-4 py-3 text-center text-[11px] text-zinc-600">
-          LoginProbe by BRNT™ · use only on systems you own or are authorized to test
+          Exodia by BRNT™ · use only on systems you own or are authorized to test
         </div>
       </footer>
     </div>
