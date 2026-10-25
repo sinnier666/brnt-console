@@ -396,17 +396,17 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
   return (
     <aside
       aria-label="Live sessions panel"
-      className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4 space-y-3 lg:sticky lg:top-16 h-fit"
+      className="exodia-glass rounded-xl p-4 space-y-3 lg:sticky lg:top-16 h-fit"
     >
       {/* header */}
       <div className="flex items-center gap-2">
-        <Radio className="h-4 w-4 text-emerald-400" />
+        <Radio className="h-4 w-4 text-yellow-400" />
         <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
           Live sessions {all.length > 0 && <span className="text-zinc-500">({all.length})</span>}
         </h2>
         <div className="ml-auto flex items-center gap-1">
           {isAdmin && (
-            <span className="rounded border border-sky-500/50 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-bold text-sky-400">ADMIN</span>
+            <span className="rounded border border-yellow-500/50 bg-yellow-500/10 px-1.5 py-0.5 text-[10px] font-bold text-yellow-400">ADMIN</span>
           )}
           <Button variant="ghost" size="sm" className="h-7 px-2 text-zinc-400" onClick={() => refresh()} aria-label="Refresh live sessions">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -432,7 +432,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
               autoComplete="off"
               onKeyDown={(e) => e.key === "Enter" && unlockAdmin()}
             />
-            <Button size="sm" className="h-8 bg-sky-500 hover:bg-sky-600 text-sky-950 font-bold" onClick={unlockAdmin} disabled={unlockBusy}>
+            <Button size="sm" className="h-8 bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-bold" onClick={unlockAdmin} disabled={unlockBusy}>
               {unlockBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />} Unlock
             </Button>
           </div>
@@ -443,7 +443,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
           <Button
             size="sm"
             variant="outline"
-            className="h-8 flex-1 border-sky-500/50 text-sky-400 hover:bg-sky-500/10"
+            className="h-8 flex-1 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
             onClick={() => setShowAdd((v) => !v)}
           >
             <Plus className="h-3.5 w-3.5" /> Add live cookies
@@ -456,7 +456,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
 
       {/* admin add form */}
       {isAdmin && showAdd && (
-        <div className="space-y-2 rounded-lg border border-sky-500/30 bg-sky-500/5 p-2.5">
+        <div className="space-y-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-2.5">
           <div className="space-y-1">
             <Label className="text-[11px] text-zinc-400">Cookies (header or Netscape .txt paste)</Label>
             <textarea
@@ -464,7 +464,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
               onChange={(e) => setAddCookies(e.target.value)}
               placeholder={"NetflixId=…; SafeNetflix=…\n— or —\n# Netscape HTTP Cookie File\n.netflix.com\tTRUE\t/\tTRUE\t0\tNetflixId\t…"}
               rows={5}
-              className="w-full rounded-md border border-zinc-800 bg-zinc-950 p-2 font-mono text-[11px] text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full rounded-md border border-zinc-800 bg-zinc-950 p-2 font-mono text-[11px] text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:ring-1 focus:ring-yellow-500"
             />
           </div>
           <div className="grid grid-cols-2 gap-1.5">
@@ -483,7 +483,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
               autoComplete="off"
             />
           </div>
-          <Button size="sm" className="h-8 w-full bg-sky-500 hover:bg-sky-600 text-sky-950 font-bold" onClick={addSession} disabled={addBusy || !addCookies.trim()}>
+          <Button size="sm" className="h-8 w-full bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-bold" onClick={addSession} disabled={addBusy || !addCookies.trim()}>
             {addBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Add to live panel
           </Button>
           {addError && <p className="text-[11px] text-rose-400">{addError}</p>}
@@ -491,8 +491,8 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
       )}
 
       {/* list */}
-      {loadError && <p className="text-xs text-amber-400">{loadError}</p>}
-      {note && <p className="text-xs text-amber-400">{note}</p>}
+      {loadError && <p className="text-xs text-orange-400">{loadError}</p>}
+      {note && <p className="text-xs text-orange-400">{note}</p>}
 
       {!loading && all.length === 0 && !loadError && (
         <div className="rounded-lg border border-dashed border-zinc-800 p-4 text-center text-xs text-zinc-500">
@@ -509,13 +509,13 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
             <li key={s.id} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-2.5 space-y-2">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-500" />
                 </span>
                 <span className="font-mono text-xs text-zinc-200 truncate">{s.host}</span>
                 {isDevice && (
                   <span
-                    className="shrink-0 rounded border border-amber-500/50 bg-amber-500/10 px-1 py-px text-[9px] font-bold text-amber-400"
+                    className="shrink-0 rounded border border-orange-500/50 bg-orange-500/10 px-1 py-px text-[9px] font-bold text-orange-400"
                     title="Saved on this device only — the shared server pool is unavailable on this deployment"
                   >
                     device
@@ -538,7 +538,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
                 <Button
                   size="sm"
                   onClick={() => openLive(s)}
-                  className={`h-8 flex-1 font-bold text-xs ${netflix ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-500 hover:bg-emerald-600 text-emerald-950"}`}
+                  className={`h-8 flex-1 font-bold text-xs ${netflix ? "bg-red-600 hover:bg-red-700 text-white" : "bg-yellow-500 hover:bg-yellow-600 text-yellow-950"}`}
                   title={netflix ? "Mint a native nftoken and open Netflix logged-in" : "Build a magic link and open the site logged-in (needs Cookie Bridge)"}
                 >
                   <Ticket className="h-3.5 w-3.5" /> NFT {netflix ? "· one-click login" : "· open live"}
@@ -603,7 +603,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
                   <span className="font-mono text-zinc-300">{d.date}</span>
                   <span className="text-zinc-600">{d.count}</span>
                   <div className="ml-auto flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-6 px-2 text-emerald-400" onClick={() => downloadDate(d.date)} disabled={logBusy === d.date} aria-label={`Download ${d.date} log`}>
+                    <Button size="sm" variant="ghost" className="h-6 px-2 text-yellow-400" onClick={() => downloadDate(d.date)} disabled={logBusy === d.date} aria-label={`Download ${d.date} log`}>
                       {logBusy === d.date ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                     </Button>
                     <Button size="sm" variant="ghost" className="h-6 px-2 text-zinc-500 hover:text-rose-400" onClick={() => clearDate(d.date)} disabled={logBusy === d.date} aria-label={`Clear ${d.date} log`}>

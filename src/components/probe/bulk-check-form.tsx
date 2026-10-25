@@ -204,7 +204,7 @@ export function BulkCheckForm({
           className="bg-zinc-950 border-zinc-800 font-mono text-xs"
         />
         {parsedPreview.length > 0 && (
-          <p className="text-[11px] text-emerald-500/90">
+          <p className="text-[11px] text-yellow-500/90">
             {parsedPreview.length} row(s) parsed · {parsedPreview.filter((r) => r.cookieOnly).length} cookie-only ·{" "}
             {parsedPreview.filter((r) => r.error).length} with issues
           </p>
@@ -234,7 +234,7 @@ export function BulkCheckForm({
             onClick={() => folderInputRef.current?.click()}>
             <FolderOpen className="h-3.5 w-3.5" /> Select folder
           </Button>
-          {files.length > 0 && <span className="text-[11px] text-emerald-500">{files.length} cookie file(s) loaded</span>}
+          {files.length > 0 && <span className="text-[11px] text-yellow-500">{files.length} cookie file(s) loaded</span>}
           <input ref={fileInputRef} type="file" accept=".txt,.csv,.json,.jsonl" multiple hidden onChange={onPickFiles} />
           <input
             ref={folderInputRef}
@@ -251,7 +251,7 @@ export function BulkCheckForm({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={run} disabled={running}
-          className="bg-emerald-500 hover:bg-emerald-600 text-emerald-950 font-bold">
+          className="bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-bold">
           {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
           {running ? `Checking ${progress.done}/${progress.total}…` : "Run bulk check"}
         </Button>
@@ -267,7 +267,7 @@ export function BulkCheckForm({
           <div className="flex-1 min-w-[120px]">
             <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
               <div
-                className="h-full bg-emerald-500 transition-all"
+                className="h-full bg-yellow-500 transition-all"
                 style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
               />
             </div>

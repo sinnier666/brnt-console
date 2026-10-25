@@ -82,7 +82,7 @@ export function SingleCheckForm({ lockedUrl, cookies, onCookiesChange, onResult,
             variant="outline"
             size="icon"
             aria-label={lockedUrl ? "URL locked" : "URL unlocked"}
-            className="border-zinc-800 text-zinc-400 hover:text-emerald-400"
+            className="border-zinc-800 text-zinc-400 hover:text-yellow-400"
             onClick={() => {
               if (lockedUrl) return; // unlocking is done from the bulk header
             }}
@@ -131,7 +131,7 @@ export function SingleCheckForm({ lockedUrl, cookies, onCookiesChange, onResult,
       <div>
         <button
           type="button"
-          className="text-xs text-zinc-400 hover:text-emerald-400 underline underline-offset-4"
+          className="text-xs text-zinc-400 hover:text-yellow-400 underline underline-offset-4"
           onClick={() => setAdvanced((v) => !v)}
         >
           {advanced ? "Hide" : "Advanced options"} (session cookies)
@@ -157,7 +157,7 @@ export function SingleCheckForm({ lockedUrl, cookies, onCookiesChange, onResult,
       <Button
         onClick={check}
         disabled={busy}
-        className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-emerald-950 font-bold"
+        className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-yellow-950 font-bold"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
         {busy ? "Checking…" : "Check login"}

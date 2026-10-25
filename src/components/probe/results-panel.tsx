@@ -63,18 +63,18 @@ function replayUrl(sessionId: string, url: string): string {
 function verdictStyle(v: ProbeResult["verdict"]): string {
   switch (v) {
     case "success":
-      return "bg-emerald-500/15 text-emerald-400 border-emerald-500/40";
+      return "bg-yellow-500/15 text-yellow-400 border-yellow-500/40";
     case "fail":
       return "bg-rose-500/15 text-rose-400 border-rose-500/40";
     default:
-      return "bg-amber-500/15 text-amber-400 border-amber-500/40";
+      return "bg-orange-500/15 text-orange-400 border-orange-500/40";
   }
 }
 
 function VerdictIcon({ v }: { v: ProbeResult["verdict"] }) {
-  if (v === "success") return <CheckCircle2 className="h-4 w-4 text-emerald-400" />;
+  if (v === "success") return <CheckCircle2 className="h-4 w-4 text-yellow-400" />;
   if (v === "fail") return <XCircle className="h-4 w-4 text-rose-400" />;
-  return <HelpCircle className="h-4 w-4 text-amber-400" />;
+  return <HelpCircle className="h-4 w-4 text-orange-400" />;
 }
 
 function timeAgo(iso: string): string {
@@ -116,7 +116,7 @@ async function exportSessionTxt(row: ProbeResult, accessKey: string): Promise<st
     note = "nftoken could not be built: " + got.error;
   }
   const content = [
-    "BRNT LoginProbe — session export",
+    "BRNT Exodia — session export",
     `Generated: ${new Date().toISOString()}`,
     `Target: ${target}`,
     `Username: ${row.username || ""}`,
@@ -266,19 +266,19 @@ export function ResultsPanel({ results, running, onClear, onRemove, accessKey, i
       </div>
 
       {running && (
-        <p className="flex items-center gap-2 text-sm text-emerald-400">
+        <p className="flex items-center gap-2 text-sm text-yellow-400">
           <Loader2 className="h-4 w-4 animate-spin" /> Checking…
         </p>
       )}
 
       {bundleNote && (
-        <p className="flex items-center gap-2 text-xs text-amber-400">
+        <p className="flex items-center gap-2 text-xs text-orange-400">
           <HelpCircle className="h-3.5 w-3.5" /> {bundleNote}
         </p>
       )}
 
       {pushNote && (
-        <p className="flex items-center gap-2 text-xs text-amber-400">
+        <p className="flex items-center gap-2 text-xs text-orange-400">
           <HelpCircle className="h-3.5 w-3.5" /> {pushNote}
         </p>
       )}
@@ -296,7 +296,7 @@ export function ResultsPanel({ results, running, onClear, onRemove, accessKey, i
               <button
                 type="button"
                 onClick={() => setSelectedId(r.id)}
-                className="min-w-0 flex-1 text-left rounded-lg border border-zinc-800 bg-zinc-950/60 hover:border-emerald-500/50 hover:bg-zinc-900/60 transition-colors p-3 flex flex-wrap items-center gap-x-3 gap-y-1"
+                className="exodia-glass min-w-0 flex-1 text-left rounded-lg hover:border-yellow-500/50 hover:bg-zinc-900/60 transition-colors p-3 flex flex-wrap items-center gap-x-3 gap-y-1"
               >
                 <VerdictIcon v={r.verdict} />
                 <Badge variant="outline" className={`uppercase text-[10px] font-bold tracking-wide ${verdictStyle(r.verdict)}`}>
@@ -314,7 +314,7 @@ export function ResultsPanel({ results, running, onClear, onRemove, accessKey, i
                   disabled={bundleBusyId === r.id}
                   title="Download this live result — cookies + nftoken link (.txt)"
                   aria-label="Download cookies and nftoken link (.txt)"
-                  className="shrink-0 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50 transition-colors"
+                  className="shrink-0 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 text-yellow-400 hover:bg-yellow-500/20 disabled:opacity-50 transition-colors"
                 >
                   {bundleBusyId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 </button>
@@ -335,7 +335,7 @@ export function ResultsPanel({ results, running, onClear, onRemove, accessKey, i
                   disabled={pushBusyId === r.id}
                   title="Send to the live session box (right panel)"
                   aria-label="Send to live session box"
-                  className="shrink-0 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 text-sky-400 hover:bg-sky-500/20 disabled:opacity-50 transition-colors"
+                  className="shrink-0 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 text-yellow-400 hover:bg-yellow-500/20 disabled:opacity-50 transition-colors"
                 >
                   {pushBusyId === r.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -811,7 +811,7 @@ function ResultDialog({ row: r, accessKey, isAdmin, onPushLive, onClose }: Dialo
               onClick={openWithNftoken}
               disabled={magicBusy || nf.busy}
               className={`w-full h-12 text-base font-bold ${
-                isNetflixTarget ? "bg-red-600 hover:bg-red-700 text-white" : "bg-emerald-500 hover:bg-emerald-600 text-emerald-950"
+                isNetflixTarget ? "bg-red-600 hover:bg-red-700 text-white" : "bg-yellow-500 hover:bg-yellow-600 text-yellow-950"
               }`}
             >
               {magicBusy || nf.busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Ticket className="h-5 w-5" />}
@@ -850,13 +850,13 @@ function ResultDialog({ row: r, accessKey, isAdmin, onPushLive, onClose }: Dialo
                   onClick={pushToLive}
                   disabled={pushBusy}
                   variant="outline"
-                  className="w-full h-9 border-sky-500/50 text-sky-400 hover:bg-sky-500/10"
+                  className="w-full h-9 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
                 >
                   {pushBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
                   Add to live panel (admin)
                 </Button>
                 {pushMsg && (
-                  <p className={`text-xs ${pushMsg.includes("failed") || pushMsg.includes("No cookies") ? "text-amber-400" : "text-emerald-400"}`}>
+                  <p className={`text-xs ${pushMsg.includes("failed") || pushMsg.includes("No cookies") ? "text-orange-400" : "text-yellow-400"}`}>
                     {pushMsg}
                   </p>
                 )}
@@ -942,7 +942,7 @@ function ResultDialog({ row: r, accessKey, isAdmin, onPushLive, onClose }: Dialo
                     </Button>
                   </div>
                   {tvMsg && (
-                    <p className={`text-xs ${tvMsg.includes("SUCCESS") || tvMsg.includes("accepted") || tvMsg.includes("✓") ? "text-emerald-400" : "text-amber-400"}`}>
+                    <p className={`text-xs ${tvMsg.includes("SUCCESS") || tvMsg.includes("accepted") || tvMsg.includes("✓") ? "text-yellow-400" : "text-orange-400"}`}>
                       {tvMsg}
                     </p>
                   )}
@@ -1017,11 +1017,11 @@ function ResultDialog({ row: r, accessKey, isAdmin, onPushLive, onClose }: Dialo
             </div>
           )}
           {nf.error && (
-            <p className="text-xs text-amber-400">nftoken: {nf.error}</p>
+            <p className="text-xs text-orange-400">nftoken: {nf.error}</p>
           )}
 
           {msg && (
-            <p className={`text-xs ${msg.includes("fail") || msg.includes("No cookies") || msg.includes("Could not") ? "text-amber-400" : "text-emerald-400"}`}>
+            <p className={`text-xs ${msg.includes("fail") || msg.includes("No cookies") || msg.includes("Could not") ? "text-orange-400" : "text-yellow-400"}`}>
               {msg}
             </p>
           )}
@@ -1030,7 +1030,7 @@ function ResultDialog({ row: r, accessKey, isAdmin, onPushLive, onClose }: Dialo
           {previewUrl && (
             <div className="space-y-1.5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-                Logged-in preview {jarAlive === false && <span className="text-amber-500 normal-case">(session expired — re-run the check to refresh it)</span>}
+                Logged-in preview {jarAlive === false && <span className="text-orange-500 normal-case">(session expired — re-run the check to refresh it)</span>}
               </h3>
               <div className="rounded-lg overflow-hidden border border-zinc-800">
                 <iframe
