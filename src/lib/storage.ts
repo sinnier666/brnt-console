@@ -3,10 +3,10 @@ import path from "path";
 
 // KV storage for the console's server-side state.
 //
-// - On Netlify (process.env.NETLIFY === "true"): Netlify Blobs — persists across
-//   serverless invocations and deploys, no external database account needed.
-// - Everywhere else (localhost dev / container hosting): the local .data/ folder
-//   (same layout as before, so existing local data keeps working).
+// - On Netlify: Netlify Blobs — persists across serverless invocations and
+//   deploys, no external database account needed.
+// - Everywhere else (localhost dev / container hosting): the local .data/
+//   folder (same layout as before, so existing local data keeps working).
 //
 // Keys are flat, slash-separated paths:
 //   "access.json" · "live-sessions.json" · "logs/usage-YYYY-MM-DD.txt" ·
@@ -20,7 +20,37 @@ export interface KV {
   list(prefix: string): Promise<string[]>;
 }
 
-export const ON_NETLIFY = process.env.NETLIFY === "true";
+// ---------------- backend selection (ROBUST Netlify detection) ----------------
+//
+// Historic bug (caught in production): we selected the backend with
+// `process.env.NETLIFY === "true"`, but the current Netlify Next.js runtime
+// does NOT set that variable inside the function environment. Result: the
+// FILESYSTEM backend ran on Netlify and tried `mkdir /var/task/.data` on the
+// read-only Lambda fs -> ENOENT on every write.
+//
+// Reliable signals that we run on Netlify (checked lazily, in order):
+//   1. process.env.NETLIFY === "true"                    (classic signal)
+//   2. process.env.NETLIFY_BLOBS_CONTEXT                 (Blobs credentials env)
+//   3. globalThis.netlifyBlobsContext                    (Blobs bootstrap global —
+//     the same two places the @netlify/blobs client itself reads)
+// On plain localhost / containers none of these exist -> filesystem backend.
+
+function detectBlobsContext(): boolean {
+  if (process.env.NETLIFY === "true") return true;
+  if (process.env.NETLIFY_BLOBS_CONTEXT) return true;
+  try {
+    return Boolean((globalThis as { netlifyBlobsContext?: unknown }).netlifyBlobsContext);
+  } catch {
+    return false;
+  }
+}
+
+let backend: KV | null = null;
+
+function kvBackend(): KV {
+  if (!backend) backend = detectBlobsContext() ? new BlobsKV() : new FsKV();
+  return backend;
+}
 
 // ---------------- filesystem backend (.data/<key>) ----------------
 
@@ -154,5 +184,13 @@ class BlobsKV implements KV {
   }
 }
 
-export const kv: KV = ON_NETLIFY ? new BlobsKV() : new FsKV();
-export const storageBackend = ON_NETLIFY ? "netlify-blobs" : "filesystem";
+export const kv: KV = {
+  get: (key) => kvBackend().get(key),
+  set: (key, value) => kvBackend().set(key, value),
+  del: (key) => kvBackend().del(key),
+  list: (prefix) => kvBackend().list(prefix),
+};
+
+export function storageBackend(): "netlify-blobs" | "filesystem" {
+  return detectBlobsContext() ? "netlify-blobs" : "filesystem";
+}

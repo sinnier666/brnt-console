@@ -1,0 +1,20 @@
+# dependencies (huge, auto-installed)
+node_modules/
+
+# next.js build cache (61,000+ temp files, regenerates on every run)
+.next/
+out/
+
+# local runtime data - CONTAINS SESSION COOKIES, NEVER UPLOAD
+.data/
+
+# secret env files
+.env
+.env.*
+!.env.example
+
+# logs and OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
