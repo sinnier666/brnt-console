@@ -19,15 +19,31 @@ const SUCCESS_KEYWORDS = [
   "my account",
   "dashboard",
 ];
+// High-precision failure phrases ONLY. Bare words like "invalid" or "try again"
+// are deliberately NOT here: big sites (Prime Video) embed internal JS error
+// identifiers ("InvalidStatusCode", "CrossDomainSSOInvalidUrl", "Try again"
+// player buttons) in their normal pages, which caused every cookie check to
+// report a false "session likely rejected" (Task 56).
 const FAIL_KEYWORDS = [
-  "incorrect",
-  "invalid",
+  "incorrect email or phone",
+  "invalid email or phone",
+  "incorrect username or password",
+  "invalid username or password",
+  "invalid email or password",
+  "invalid credentials",
+  "invalid login",
+  "invalid username",
+  "invalid password",
   "wrong password",
   "login failed",
   "log in failed",
   "sign in failed",
   "authentication failed",
-  "try again",
+  "your session has expired",
+  "session expired",
+  "account has been locked",
+  "account is locked",
+  "too many attempts",
 ];
 
 export function normalizeProbeUrl(v: string): string {
