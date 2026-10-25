@@ -155,6 +155,8 @@ interface PanelProps {
   results: ProbeResult[];
   running: boolean;
   onClear: () => void;
+  /** remove a single result row (also persists via the app's localStorage effect) */
+  onRemove: (id: string) => void;
   accessKey: string;
   /** admin-only: push a result row's cookies into the shared live panel */
   isAdmin?: boolean;
@@ -167,7 +169,7 @@ interface PanelProps {
   }) => Promise<string | null>;
 }
 
-export function ResultsPanel({ results, running, onClear, accessKey, isAdmin, onPushLive }: PanelProps) {
+export function ResultsPanel({ results, running, onClear, onRemove, accessKey, isAdmin, onPushLive }: PanelProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = useMemo(() => results.find((r) => r.id === selectedId) || null, [results, selectedId]);
   const [bundleBusyId, setBundleBusyId] = useState<string | null>(null);
@@ -178,6 +180,12 @@ export function ResultsPanel({ results, running, onClear, accessKey, isAdmin, on
 
   function exportJson() {
     download("login-probe-results.json", JSON.stringify(results, null, 2), "application/json");
+  }
+
+  /** Delete one row — closes the dialog first if THAT row is open in it. */
+  function removeRow(id: string) {
+    setSelectedId((cur) => (cur === id ? null : cur));
+    onRemove(id);
   }
 
   // Task 34: per-row "cookies + nftoken link" .txt for live/successful results
@@ -311,6 +319,15 @@ export function ResultsPanel({ results, running, onClear, accessKey, isAdmin, on
                   {bundleBusyId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => removeRow(r.id)}
+                title="Delete this result"
+                aria-label={`Delete result for ${hostOf(r.target)}`}
+                className="shrink-0 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 text-zinc-600 hover:border-rose-500/50 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
               {r.verdict === "success" && isAdmin && onPushLive && (
                 <button
                   type="button"

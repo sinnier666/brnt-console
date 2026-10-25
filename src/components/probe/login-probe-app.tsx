@@ -554,6 +554,7 @@ export function LoginProbeApp() {
           results={results}
           running={running}
           onClear={() => setResults([])}
+          onRemove={(id) => setResults((prev) => prev.filter((r) => r.id !== id))}
           accessKey={accessKey}
           isAdmin={isAdmin}
           onPushLive={pushLive}
