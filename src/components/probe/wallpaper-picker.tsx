@@ -15,6 +15,11 @@ export interface Wallpaper {
   dim: number;
   /** 0..24 — background blur in px */
   blur: number;
+  /** vertical anchor for the cover crop. "top" keeps the top of the art
+   * (Exodia's head) visible on wide/fullscreen viewports; "center" crops
+   * top and bottom equally (legacy behavior for custom images).
+   * Stored wallpapers without this field render as "center". */
+  pos?: "top" | "center";
 }
 
 const KEY = "exodia-wallpaper-v1";
@@ -26,6 +31,10 @@ export const DEFAULT_WALLPAPER: Wallpaper = {
   src: "/wallpapers/exodia.jpg",
   dim: 50,
   blur: 0,
+  // the art is portrait — anchor it to the top so Exodia's head is never
+  // cropped away on wide or fullscreen windows (cover would otherwise cut
+  // ~30% off the top at 16:9)
+  pos: "top",
 };
 
 export function useWallpaper(): [Wallpaper | null, (w: Wallpaper | null) => void] {

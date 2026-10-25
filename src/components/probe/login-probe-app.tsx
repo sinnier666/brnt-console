@@ -279,7 +279,7 @@ export function LoginProbeApp() {
         {wall ? (
           <>
             <div
-              className="absolute inset-0 bg-cover bg-center"
+              className={`absolute inset-0 bg-cover ${wall.pos === "top" ? "bg-top" : "bg-center"}`}
               style={{
                 backgroundImage: `url("${wall.src}")`,
                 filter: wall.blur ? `blur(${wall.blur}px)` : undefined,
