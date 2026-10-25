@@ -15,6 +15,7 @@ import { ResultsPanel } from "./results-panel";
 import { LivePanel } from "./live-panel";
 import { addLocalLive } from "@/lib/local-live";
 import { WallpaperButton, useWallpaper } from "./wallpaper-picker";
+import { CookieBridgeDialog, CookieBridgeSteps } from "./cookie-bridge-guide";
 
 const RESULTS_KEY = "login-probe-results";
 const CONFIRMED_KEY = "brnt-confirmed";
@@ -61,6 +62,9 @@ export function LoginProbeApp() {
 
   // wallpaper
   const [wall, setWall] = useWallpaper();
+
+  // cookie bridge guide dialog
+  const [bridgeOpen, setBridgeOpen] = useState(false);
 
   // shared form state
   const [mode, setMode] = useState("single");
@@ -302,16 +306,16 @@ export function LoginProbeApp() {
           </h1>
           <div className="ml-auto flex items-center gap-2 text-xs">
             <WallpaperButton value={wall} onChange={setWall} />
-            <a
-              href="/brnt-cookie-bridge.zip"
-              download
-              title="Download the BRNT Cookie Bridge extension (zip) - one-click cookie import on the current page"
+            <button
+              type="button"
+              onClick={() => setBridgeOpen(true)}
+              title="How to install the Cookie Bridge extension — step-by-step guide + download"
               className="inline-flex items-center gap-1.5 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-2.5 py-1.5 font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
             >
               <Puzzle className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Cookie Bridge</span>
               <span className="sm:hidden">Bridge</span>
-            </a>
+            </button>
             {isAdmin && (
               <span className="hidden sm:inline rounded border border-yellow-500/50 bg-yellow-500/10 px-2 py-0.5 font-bold text-yellow-400" title="Admin mode — live panel management unlocked">
                 <Radio className="mr-1 inline h-3 w-3" />ADMIN
@@ -359,6 +363,9 @@ export function LoginProbeApp() {
           </div>
         </div>
       </header>
+
+      {/* cookie bridge install guide dialog (opened from the header button) */}
+      <CookieBridgeDialog open={bridgeOpen} onOpenChange={setBridgeOpen} />
 
       <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-4 py-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] items-start">
@@ -602,6 +609,18 @@ export function LoginProbeApp() {
             onChanged={() => setLiveTick((t) => t + 1)}
           />
         </div>
+
+        {/* cookie bridge install guide — below the main content */}
+        <section className="exodia-glass mt-6 rounded-xl p-5" aria-label="How to install the Cookie Bridge">
+          <div className="mb-1 flex items-center gap-2">
+            <Puzzle className="h-4 w-4 text-yellow-400" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">How to install the Cookie Bridge</h2>
+          </div>
+          <p className="mb-4 text-xs text-zinc-500">
+            The extension is what opens the real site logged-in — the console itself is not allowed to set cookies on other sites. Install it once, it takes about 30 seconds.
+          </p>
+          <CookieBridgeSteps />
+        </section>
       </main>
 
       <footer className="relative z-10 mt-auto border-t border-yellow-500/15">
