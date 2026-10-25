@@ -369,7 +369,7 @@ export function LoginProbeApp() {
 
       <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-4 py-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] items-start">
-          <div className="space-y-6 min-w-0">
+          <div className="space-y-6 min-w-0 lg:col-start-1 lg:row-start-1">
         {/* access gate */}
         {gateOpen && (
           <section className="exodia-glass rounded-xl p-5 space-y-4" aria-label="Member access">
@@ -580,34 +580,39 @@ export function LoginProbeApp() {
           </TabsContent>
         </Tabs>
 
-        {/* results */}
-        <ResultsPanel
-          results={results}
-          running={running}
-          onClear={() => setResults([])}
-          onRemove={(id) => setResults((prev) => prev.filter((r) => r.id !== id))}
-          accessKey={accessKey}
-          isAdmin={isAdmin}
-          onPushLive={pushLive}
-        />
-
-        {locked && (
-          <p className="text-center text-xs text-zinc-600">
-            Checks are locked until authorization is confirmed and a valid member key is set (the server also enforces it).
-          </p>
-        )}
           </div>
 
-          {/* right-side live panel */}
-          <LivePanel
-            accessKey={accessKey}
-            isAdmin={isAdmin}
-            adminKey={adminKey}
-            refreshTick={liveTick}
-            onAdminUnlock={(k) => verifyAdmin(k)}
-            onAdminLock={lockAdmin}
-            onChanged={() => setLiveTick((t) => t + 1)}
-          />
+          {/* right-side live panel: column 2 on desktop (sticky), directly under the check forms on mobile */}
+          <div className="min-w-0 self-stretch lg:col-start-2 lg:row-start-1 lg:row-span-2">
+            <LivePanel
+              accessKey={accessKey}
+              isAdmin={isAdmin}
+              adminKey={adminKey}
+              refreshTick={liveTick}
+              onAdminUnlock={(k) => verifyAdmin(k)}
+              onAdminLock={lockAdmin}
+              onChanged={() => setLiveTick((t) => t + 1)}
+            />
+          </div>
+
+          {/* results — left column under the forms on desktop, after the live panel on mobile */}
+          <div className="space-y-6 min-w-0 lg:col-start-1 lg:row-start-2">
+            <ResultsPanel
+              results={results}
+              running={running}
+              onClear={() => setResults([])}
+              onRemove={(id) => setResults((prev) => prev.filter((r) => r.id !== id))}
+              accessKey={accessKey}
+              isAdmin={isAdmin}
+              onPushLive={pushLive}
+            />
+
+            {locked && (
+              <p className="text-center text-xs text-zinc-600">
+                Checks are locked until authorization is confirmed and a valid member key is set (the server also enforces it).
+              </p>
+            )}
+          </div>
         </div>
 
         {/* cookie bridge install guide — below the main content */}
