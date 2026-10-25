@@ -123,6 +123,19 @@ export async function addLiveSession(input: {
   const host = hostOf(target);
   if (!host) return { ok: false, error: "Could not derive a site — pass a target URL (e.g. https://netflix.com)." };
 
+  // Netflix gate: a Netflix row without the NetflixId cookie can never log in.
+  // Reject it here with a clear message instead of storing a dead entry.
+  if (
+    /(^|\.)netflix\.com$/i.test(host) &&
+    !(richCookies ?? parsed).some((c) => /^netflixid$/i.test(c.name))
+  ) {
+    return {
+      ok: false,
+      error:
+        "This paste has no NetflixId cookie — the one cookie that actually holds a Netflix login. Netflix rows can't work without it: re-export the FULL cookie set (the Cookie Bridge captures everything) and paste again.",
+    };
+  }
+
   const record: LiveSession = {
     id: randomId(),
     target,

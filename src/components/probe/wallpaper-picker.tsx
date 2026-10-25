@@ -19,21 +19,37 @@ export interface Wallpaper {
 
 const KEY = "exodia-wallpaper-v1";
 
+/** Built-in preset: the Exodia keyart shipped with the console at
+ * /wallpapers/exodia.jpg. Shown by DEFAULT in every browser until the user
+ * explicitly removes it (which stores "null" → gold aurora). */
+export const DEFAULT_WALLPAPER: Wallpaper = {
+  src: "/wallpapers/exodia.jpg",
+  dim: 50,
+  blur: 0,
+};
+
 export function useWallpaper(): [Wallpaper | null, (w: Wallpaper | null) => void] {
-  const [wall, setWall] = useState<Wallpaper | null>(null);
+  const [wall, setWall] = useState<Wallpaper | null>(DEFAULT_WALLPAPER);
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setWall(JSON.parse(raw));
+      if (raw === "null") setWall(null); // explicitly removed → gold aurora
+      else if (raw) {
+        const j = JSON.parse(raw);
+        if (j && typeof j.src === "string") setWall(j);
+        else setWall(DEFAULT_WALLPAPER);
+      }
+      // no stored value at all → keep the default Exodia art
     } catch {
-      /* ignore */
+      /* keep default */
     }
   }, []);
   const update = (w: Wallpaper | null) => {
     setWall(w);
     try {
-      if (w) localStorage.setItem(KEY, JSON.stringify(w));
-      else localStorage.removeItem(KEY);
+      // null is stored as the literal string "null" so "explicitly removed"
+      // survives reloads; absent key means "never touched" → default art.
+      localStorage.setItem(KEY, w === null ? "null" : JSON.stringify(w));
     } catch {
       /* quota exceeded — keep showing it for this session at least */
     }
@@ -135,6 +151,27 @@ export function WallpaperButton({
                 No wallpaper — gold aurora active
               </div>
             )}
+
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold text-zinc-400">Built-in</p>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange({ ...DEFAULT_WALLPAPER });
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-lg border border-yellow-500/30 bg-black/40 p-1.5 text-left transition-colors hover:border-yellow-500/60"
+              >
+                <span
+                  className="h-9 w-14 shrink-0 rounded border border-yellow-500/30 bg-cover bg-center"
+                  style={{ backgroundImage: `url("${DEFAULT_WALLPAPER.src}")` }}
+                />
+                <span className="min-w-0">
+                  <span className="block font-semibold text-yellow-300">Exodia the Forbidden One</span>
+                  <span className="block text-[10px] text-zinc-500">official console keyart — dark &amp; gold</span>
+                </span>
+              </button>
+            </div>
 
             <input
               ref={fileRef}

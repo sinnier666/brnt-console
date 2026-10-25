@@ -70,23 +70,15 @@ export function isNetflixHost(url: string): boolean {
 
 export interface Nftoken {
   link: string;
-  kind: "native" | "magic" | "replay";
+  kind: "native" | "magic";
   expires: number | null;
-}
-
-/** Human label for the three link kinds. */
-export function nftKindLabel(kind: Nftoken["kind"]): string {
-  if (kind === "native") return "native Netflix nftoken (works in ANY browser — no extension needed)";
-  if (kind === "replay") return "live proxy view through the console (works in ANY browser — no extension needed, valid 24h)";
-  return "magic link BR1 (open it with the BRNT Cookie Bridge extension v1.2+)";
 }
 
 /**
  * Resolve an nftoken login link for a cookie set: Netflix cookies with a
  * NetflixId get a NATIVE token (any browser, no extension); everything else
- * opens through the console's own REPLAY PROXY (any browser, no extension,
- * 24h session) — the BR1 magic link (needs Cookie Bridge) is only a fallback
- * when the proxy cannot be created.
+ * (and any native failure) falls back to the BR1 magic link, which needs the
+ * Cookie Bridge extension to open.
  */
 export async function resolveNftoken(
   target: string,
@@ -122,29 +114,11 @@ export async function resolveNftoken(
       return { ok: false, error: why };
     }
   }
-  // Everything else: open through the console's replay proxy — no Cookie
-  // Bridge needed, works in any browser. Magic link only as fallback.
   try {
-    const res = await fetch("/api/replay-open", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-brnt-access": accessKey },
-      body: JSON.stringify({ target, jar: cookies }),
-    });
-    const j = await res.json().catch(() => null);
-    if (res.ok && j?.ok && j.url) {
-      return { ok: true, nft: { link: String(j.url), kind: "replay" as const, expires: null } };
-    }
-    const why = String(j?.message || j?.error || `HTTP ${res.status}`);
-    const built = await buildMagicLink(target, cookies).catch(() => null);
-    if (built)
-      return { ok: true, nft: { link: built.link, kind: "magic", expires: null }, note: `live proxy unavailable (${why}) — magic link used instead (needs Cookie Bridge)` };
-    return { ok: false, error: why };
+    const built = await buildMagicLink(target, cookies);
+    return { ok: true, nft: { link: built.link, kind: "magic", expires: null } };
   } catch (e) {
-    const why = e instanceof Error ? e.message : String(e);
-    const built = await buildMagicLink(target, cookies).catch(() => null);
-    if (built)
-      return { ok: true, nft: { link: built.link, kind: "magic", expires: null }, note: `live proxy unavailable (${why}) — magic link used instead (needs Cookie Bridge)` };
-    return { ok: false, error: why };
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -156,7 +130,11 @@ export function nftokenTxtFor(nft: Nftoken, target: string, username = ""): stri
     `Target: ${target}`,
     username ? `Username: ${username}` : null,
     `Generated: ${new Date().toISOString()}`,
-    `Type: ${nftKindLabel(nft.kind)}`,
+    `Type: ${
+      nft.kind === "native"
+        ? "native Netflix nftoken (works in ANY browser — no extension needed)"
+        : "magic link BR1 (open it with the BRNT Cookie Bridge extension v1.2+)"
+    }`,
     nft.expires
       ? `Token expires: ${new Date(nft.expires * 1000).toISOString()}`
       : "Token expires: unknown (dies with the server-side session)",

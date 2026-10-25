@@ -40,7 +40,6 @@ import {
   isNetflixHost,
   resolveNftoken,
   nftokenTxtFor,
-  nftKindLabel,
   type Nftoken,
 } from "@/lib/session-export";
 
@@ -125,7 +124,11 @@ async function exportSessionTxt(row: ProbeResult, accessKey: string): Promise<st
     `Checked: ${row.checkedAt}`,
     "",
     "== nftoken link ==",
-    `Type: ${nftKindLabel(nft.kind)}`,
+    `Type: ${
+      nft.kind === "native"
+        ? "native Netflix nftoken (works in ANY browser — no extension needed)"
+        : "magic link BR1 (open it with the BRNT Cookie Bridge extension v1.2+)"
+    }`,
     note ? `Note: ${note}` : null,
     nft.expires
       ? `Token expires: ${new Date(nft.expires * 1000).toISOString()}`

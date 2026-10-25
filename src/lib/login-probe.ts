@@ -446,6 +446,75 @@ export async function probeWithCookies(target: string, cookieText: string): Prom
   const chainStr = withC.redirectChain.length ? ` | ${withC.redirectChain.join(" | ")}` : "";
   evidence.push(`GET with cookies → HTTP ${withC.status}${chainStr}`);
 
+  const host = (jarHostOf(target) || jarHostOf(withC.finalUrl) || "").toLowerCase();
+  const finalPath = safePath(withC.finalUrl) || "/";
+
+  // Authenticity gates — decisive verdicts that do NOT depend on keywords.
+  // Keyword matching alone gets fooled: logged-OUT Netflix pages embed words
+  // like "logout" inside their reactContext JSON (clearMslDataOnLogout etc.).
+  const earlyResult = (
+    verdict: ProbeResult["verdict"],
+    confidence: ProbeResult["confidence"],
+    sessionId: string | null = null
+  ): ProbeResult => ({
+    ...base,
+    verdict,
+    confidence,
+    httpStatus: withC.status,
+    pageTitle: title(withC.html),
+    finalUrl: withC.finalUrl,
+    redirected: withC.redirectChain.length > 0,
+    elapsedMs: Date.now() - started,
+    snapshot: { bytes: withC.bytes, path: finalPath },
+    cookiesSet: parsed.map((c) => c.name),
+    sessionId,
+  });
+
+  if (/(^|\.)netflix\.com$/.test(host)) {
+    if (!parsed.some((c) => /^netflixid$/i.test(c.name))) {
+      evidence.push(
+        "This cookie set has no NetflixId — the one cookie that actually holds a Netflix login. It cannot authenticate Netflix regardless of what the page contains."
+      );
+      return earlyResult("fail", "high");
+    }
+  }
+
+  // Bot-protection challenge detection (Fastly "Client Challenge", Cloudflare,
+  // PerimeterX, …). When a site gates the console's SERVER IP it serves a tiny
+  // JS challenge shell instead of the real page — identical with or without
+  // cookies. The session then cannot be judged from the server at all; the
+  // cookies themselves may be perfectly valid. Must run BEFORE any page-path
+  // gates so a challenge shell can never be mistaken for a members' page.
+  const pageT = title(withC.html);
+  const CHALLENGE_RE =
+    /_fs-ch-|client challenge|just a moment|attention required|cf-browser-verification|cf_chl_|perimeterx|px-captcha|captcha-delivery|ddos-guard/i;
+  const challengeHit =
+    CHALLENGE_RE.test(withC.html) || (withC.bytes > 0 && withC.bytes < 4000 && /challenge/i.test(pageT));
+  if (challengeHit) {
+    evidence.push(
+      `The site served the console's server a BOT-PROTECTION challenge page (${withC.bytes} bytes${pageT ? `, title "${pageT}"` : ""}) instead of the real page — it is gating the server's IP.`
+    );
+    evidence.push(
+      "The session cannot be judged from here, and this says NOTHING bad about your cookies — they may be perfectly valid. Verify by opening the site through the Cookie Bridge (it opens in YOUR browser, where the real page loads)."
+    );
+    return earlyResult("unknown", "low");
+  }
+
+  if (/(^|\.)netflix\.com$/.test(host)) {
+    if (/(^|\/)(login|signin)(\/|$)/i.test(finalPath)) {
+      evidence.push(
+        `Netflix sent your cookies to ${finalPath} — the members' area stays locked, so this session is rejected or expired.`
+      );
+      return earlyResult("fail", "high");
+    }
+    if (/(^|\/)(browse|profiles|watch|LatestListPage|YourAccount)(\/|$)/i.test(finalPath)) {
+      evidence.push(`Netflix served the members' area (${finalPath}) → the session is alive.`);
+      const session = await createSession(withC.finalUrl, jar);
+      return earlyResult("success", "high", session.id);
+    }
+    // other Netflix paths: fall through to the generic checks below
+  }
+
   const successKw = SUCCESS_KEYWORDS.find((k) => withC.html.toLowerCase().includes(k));
   const failKw = FAIL_KEYWORDS.find((k) => withC.html.toLowerCase().includes(k));
 
@@ -464,25 +533,59 @@ export async function probeWithCookies(target: string, cookieText: string): Prom
     Math.abs(withoutC.bytes - withC.bytes) < Math.max(2000, withoutC.bytes * 0.02) &&
     safePath(withoutC.finalUrl) === safePath(withC.finalUrl);
 
+  // A page that still lands on a login/sign-in route WITH cookies attached
+  // means the site does not recognize the session — this outranks keywords
+  // (login pages often embed "logout" in their internal JSON).
+  const landedAuth = /(^|\/)(login|signin|sign-in|logon|authenticate)(\/|$)/i.test(finalPath);
+
+  // Keywords that only make sense on a real logged-in page. "logout"/"my
+  // account"/"dashboard" also live in site code and anonymous-page JSON.
+  const STRONG_SUCCESS = new Set(["sign out", "welcome back", "signed in as", "logged in as"]);
+
   let verdict: ProbeResult["verdict"] = "unknown";
   let confidence: ProbeResult["confidence"] = "low";
 
-  if (successKw && !noCookiesKw) {
+  if (landedAuth) {
+    verdict = "fail";
+    confidence = "medium";
+    evidence.push(
+      `With your cookies the site still lands on its login page (${finalPath}) → it does not recognize this session.`
+    );
+  } else if (successKw && !noCookiesKw) {
     verdict = "success";
-    confidence = "high";
+    confidence = STRONG_SUCCESS.has(successKw) ? "high" : "medium";
     evidence.push(`Success keywords with cookies: ${successKw}`);
     evidence.push(
       `GET without cookies → HTTP ${withoutC.status}, ${withoutC.bytes} bytes, path "${safePath(withoutC.finalUrl)}"`
     );
-    evidence.push("Logged-in indicator(s) appear only with your cookies → session is alive.");
+    evidence.push(
+      STRONG_SUCCESS.has(successKw)
+        ? "Logged-in indicator(s) appear only with your cookies → session is alive."
+        : `Indicator "${successKw}" appears only with your cookies, but this word can also live in site code — treated as moderate proof.`
+    );
   } else if (successKw && noCookiesKw && !sameish) {
-    verdict = "success";
-    confidence = "medium";
-    evidence.push(`Success keywords with cookies; responses differ → likely logged in`);
+    if (STRONG_SUCCESS.has(successKw)) {
+      verdict = "success";
+      confidence = "medium";
+      evidence.push(`Success keywords with cookies; responses differ → likely logged in`);
+    } else {
+      evidence.push(
+        `Indicator "${successKw}" also exists on the logged-out page (site code/UI strings) and the responses differ only slightly → not proof of a session.`
+      );
+    }
   } else if (failKw) {
     verdict = "fail";
     confidence = "medium";
     evidence.push(`Failure keyword with cookies: ${failKw} → session likely rejected`);
+  } else if (
+    /primevideo\.com|amazon\.[a-z.]+/i.test(withC.finalUrl) &&
+    /\/offers\/nonprimehomepage/i.test(withC.finalUrl)
+  ) {
+    // Prime Video bounced the session to its logged-out landing page —
+    // unambiguous proof the cookies are no longer authenticated.
+    verdict = "fail";
+    confidence = "high";
+    evidence.push("Prime redirected your cookies to the logged-out /offers/nonprimehomepage → session is NOT authenticated (cookies expired, invalidated, or the export is missing auth cookies like at-main / x-main).");
   } else {
     evidence.push(
       `GET without cookies → HTTP ${withoutC.status}, ${withoutC.bytes} bytes, path "${safePath(withoutC.finalUrl)}"`

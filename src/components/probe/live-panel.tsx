@@ -261,7 +261,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
         }
       }
       record(
-        got.nft.kind === "native" ? "nft-open" : got.nft.kind === "replay" ? "replay-open" : "magic-open",
+        got.nft.kind === "native" ? "nft-open" : "magic-open",
         s.host,
         toHeader(cookies)
       );
@@ -543,7 +543,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
                   size="sm"
                   onClick={() => openLive(s)}
                   className={`h-8 flex-1 font-bold text-xs ${netflix ? "bg-red-600 hover:bg-red-700 text-white" : "bg-yellow-500 hover:bg-yellow-600 text-yellow-950"}`}
-                  title={netflix ? "Mint a native nftoken and open Netflix logged-in (any browser)" : "Open the site through the console's live proxy — logged-in in ANY browser, no extension needed"}
+                  title={netflix ? "Mint a native nftoken and open Netflix logged-in" : "Build a magic link and open the site logged-in (needs Cookie Bridge)"}
                 >
                   <Ticket className="h-3.5 w-3.5" /> NFT {netflix ? "· one-click login" : "· open live"}
                 </Button>
@@ -628,7 +628,7 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
 
       <p className="flex items-start gap-1 text-[10px] leading-relaxed text-zinc-600">
         <Link2 className="h-3 w-3 shrink-0 mt-0.5" />
-        Netflix entries mint a native nftoken (any browser). Other sites open through the console's live proxy — logged-in in ANY browser, no extension needed (view valid 24h).
+        Netflix entries mint a native nftoken (any browser). Other sites build a BR1 magic link — opening it needs the Cookie Bridge extension.
       </p>
     </aside>
   );
