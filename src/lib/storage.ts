@@ -311,6 +311,7 @@ class VercelBlobKV implements KV {
       await m.put(key, encryptValue(value), {
         access: "public",
         addRandomSuffix: false, // pathnames must equal KV keys
+        allowOverwrite: true, // KV semantics: set() replaces the existing value
         contentType: "text/plain; charset=utf-8",
       });
     } catch (e) {
