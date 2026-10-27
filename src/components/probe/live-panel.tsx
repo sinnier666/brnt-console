@@ -461,6 +461,10 @@ export function LivePanel({ accessKey, isAdmin, adminKey, refreshTick, onAdminUn
       {/* admin add form */}
       {isAdmin && showAdd && (
         <div className="space-y-2 rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-2.5">
+          <p className="text-[11px] leading-snug text-yellow-400/90">
+            Adding never overwrites — every paste appends a new row. Saved sessions stay in permanent
+            storage until YOU delete them with the trash icon (they survive redeploys and lock/unlock).
+          </p>
           <div className="space-y-1">
             <Label className="text-[11px] text-zinc-400">Cookies (header or Netscape .txt paste)</Label>
             <textarea

@@ -48,7 +48,19 @@ function detectBlobsContext(): boolean {
 let backend: KV | null = null;
 
 function kvBackend(): KV {
-  if (!backend) backend = detectBlobsContext() ? new BlobsKV() : new FsKV();
+  if (!backend) {
+    // 1) Netlify -> Netlify Blobs (native, persistent).
+    // 2) Vercel (or any host with a BLOB_READ_WRITE_TOKEN) -> Vercel Blob
+    //    (persistent, SHARED by every serverless instance — fixes the bug
+    //    where live sessions lived in one instance's ephemeral disk so some
+    //    visitors saw the pool and others saw it empty, and redeploys wiped it).
+    // 3) Local dev / containers -> filesystem .data/ (unchanged).
+    backend = detectBlobsContext()
+      ? new BlobsKV()
+      : process.env.BLOB_READ_WRITE_TOKEN
+        ? new VercelBlobKV()
+        : new FsKV();
+  }
   return backend;
 }
 
@@ -184,6 +196,96 @@ class BlobsKV implements KV {
   }
 }
 
+// ---------------- Vercel Blob backend (@vercel/blob) ----------------
+
+// Vercel's serverless filesystem is EPHEMERAL: each lambda instance has its
+// own .data folder and redeploys throw it away. Vercel Blob is real persistent
+// storage shared by every instance, so the live-session pool, minted member
+// keys, replay sessions and usage logs all survive redeploys and are visible
+// from every request no matter which instance serves it.
+
+const VBLOB_NS = "brnt-data/";
+
+class VercelBlobKV implements KV {
+  private sdkP: Promise<
+    typeof import("@vercel/blob")
+  > | null = null;
+
+  /** Lazy dynamic import — keeps the SDK out of bundles that never use it. */
+  private async sdk() {
+    if (!this.sdkP) this.sdkP = import("@vercel/blob");
+    return this.sdkP;
+  }
+
+  /** Logical KV key -> namespaced blob pathname (shared-store safety). */
+  private static k(key: string) {
+    return VBLOB_NS + key.replace(/^\/+/, "");
+  }
+
+  async get(key: string): Promise<string | null> {
+    try {
+      const m = await this.sdk();
+      const res = await m.get(VercelBlobKV.k(key), { access: "public" });
+      if (!res || res.statusCode !== 200 || !res.stream) return null;
+      return await new Response(res.stream).text();
+    } catch (e) {
+      // Missing keys resolve to null without throwing here; a throw is a real
+      // failure. Degrade gracefully (same contract as BlobsKV.get).
+      console.error(`[vercel-blob] get failed for "${key}":`, e);
+      return null;
+    }
+  }
+
+  async set(key: string, value: string): Promise<void> {
+    try {
+      const m = await this.sdk();
+      await m.put(VercelBlobKV.k(key), value, {
+        access: "public",
+        addRandomSuffix: false, // same key must map to the same blob
+        allowOverwrite: true, // and updates must be able to replace it
+        contentType: "application/json",
+      });
+    } catch (e) {
+      console.error(`[vercel-blob] set failed for "${key}":`, e);
+      throw e; // callers surface this as STORAGE_WRITE_FAILED
+    }
+  }
+
+  async del(key: string): Promise<void> {
+    try {
+      const m = await this.sdk();
+      await m.del(VercelBlobKV.k(key));
+    } catch (e) {
+      console.error(`[vercel-blob] delete failed for "${key}":`, e);
+      /* treat as already gone */
+    }
+  }
+
+  async list(prefix: string): Promise<string[]> {
+    try {
+      const m = await this.sdk();
+      const out: string[] = [];
+      let cursor: string | undefined = undefined;
+      // cursor loop: the SDK pages at 1000 entries; guard caps pathological loops
+      for (let i = 0; i < 50; i++) {
+        const res = await m.list({ prefix: VercelBlobKV.k(prefix), cursor, limit: 1000 });
+        for (const b of res.blobs || []) {
+          const name = b.pathname.startsWith(VBLOB_NS)
+            ? b.pathname.slice(VBLOB_NS.length)
+            : b.pathname;
+          out.push(name);
+        }
+        if (!res.hasMore || !res.cursor) break;
+        cursor = res.cursor;
+      }
+      return out.sort();
+    } catch (e) {
+      console.error(`[vercel-blob] list failed for "${prefix}":`, e);
+      return [];
+    }
+  }
+}
+
 export const kv: KV = {
   get: (key) => kvBackend().get(key),
   set: (key, value) => kvBackend().set(key, value),
@@ -191,6 +293,8 @@ export const kv: KV = {
   list: (prefix) => kvBackend().list(prefix),
 };
 
-export function storageBackend(): "netlify-blobs" | "filesystem" {
-  return detectBlobsContext() ? "netlify-blobs" : "filesystem";
+export function storageBackend(): "netlify-blobs" | "vercel-blob" | "filesystem" {
+  if (detectBlobsContext()) return "netlify-blobs";
+  if (process.env.BLOB_READ_WRITE_TOKEN) return "vercel-blob";
+  return "filesystem";
 }
