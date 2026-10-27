@@ -512,6 +512,23 @@ export async function probeWithCookies(target: string, cookieText: string): Prom
       const session = await createSession(withC.finalUrl, jar);
       return earlyResult("success", "high", session.id);
     }
+    // Netflix has NO keyword ambiguity: valid cookies ALWAYS land in the
+    // members' area (/browse, /profiles, …). If the cookies instead land on
+    // the PUBLIC marketing page (locale root like /us-en/, /hk-ko/, or the
+    // bare root with the sign-up title), the session is dead — full stop.
+    // Reporting this structurally beats keyword roulette: the marketing page
+    // embeds strings like "logout" in its own JS, which let a DEAD session
+    // luck into a false "success" when the geo variant differed between the
+    // with/without-cookie fetches (user report, Task 67).
+    const marketingLanding =
+      /^\/(?:[a-z]{2}(?:-[a-z]{2})?\/?)?$/i.test(finalPath) ||
+      /watch tv shows online|watch movies online|unlimited movies/.test(pageT.toLowerCase());
+    if (marketingLanding) {
+      evidence.push(
+        `Netflix served the PUBLIC marketing page (${finalPath}${pageT ? `, title "${pageT}"` : ""}) instead of the members' area → this session is rejected, expired, or logged out.`
+      );
+      return earlyResult("fail", "high");
+    }
     // other Netflix paths: fall through to the generic checks below
   }
 
